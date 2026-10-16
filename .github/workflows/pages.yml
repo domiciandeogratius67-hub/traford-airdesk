@@ -2,7 +2,9 @@ name: Deploy AirDesk to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - domiciandeogratius67-hub-traford-airdesk-project
   workflow_dispatch:
 
 permissions:

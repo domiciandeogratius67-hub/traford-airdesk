@@ -76,7 +76,7 @@ Then open `http://127.0.0.1:8765`.
 
 ## GitHub Pages deployment
 
-The included [Pages workflow](.github/workflows/pages.yml) deploys the static app on every push to `main` and supports manual runs. In the repository, open **Settings → Pages** and select **GitHub Actions** as the build and deployment source. The workflow uses GitHub's Pages artifact and deployment actions; it does not use Jekyll or a separate `gh-pages` branch. Check **Actions → Deploy AirDesk to GitHub Pages** for the deployment URL and status.
+The included [Pages workflow](.github/workflows/pages.yml) deploys the static app on every push to `main` and the project preview branch, and supports manual runs. In the repository, open **Settings → Pages** and select **GitHub Actions** as the build and deployment source. The workflow uses GitHub's Pages artifact and deployment actions; it does not use Jekyll or a separate `gh-pages` branch. Check **Actions → Deploy AirDesk to GitHub Pages** for the deployment URL and status.
 
 For a fork, update the Pages URL in `companion/server.py`'s `ALLOWED_ORIGINS` to the fork owner's `https://<owner>.github.io` origin before deploying, then push that change. A repository path does not change the origin.
 
