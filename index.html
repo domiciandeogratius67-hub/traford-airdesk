@@ -3,41 +3,43 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#f4f5f1">
-    <meta name="description" content="A calm, local-first AI workspace for collecting ideas, making plans, and getting things done.">
-    <title>Traford AirDesk — your ideas, in good company</title>
+    <meta name="theme-color" content="#fceef3">
+    <meta name="description" content="A personal, password-protected diary and idea book, lovingly made by Traford.">
+    <title>For you, always — a diary by Traford</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='13' fill='%232f6d59'/%3E%3Cpath d='M10 13h20M20 13v16m-7-9h14' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="./styles.css">
     <script src="./app.js" defer></script>
+    <script src="./diary.js" defer></script>
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar" aria-label="Workspace navigation">
         <a class="brand" href="./" aria-label="Traford AirDesk home">
           <span class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 32 32"><path d="M7 10h18M16 10v15m-7-8h14"/></svg>
+            <svg viewBox="0 0 32 32"><path d="M16 27S4 20 4 12a6 6 0 0 1 11-3 6 6 0 0 1 11 3c0 8-10 15-10 15Z"/></svg>
           </span>
-          <span class="brand-copy"><strong>AirDesk</strong><small>by Traford</small></span>
+          <span class="brand-copy"><strong>Her little book</strong><small>a diary from Traford</small></span>
         </a>
 
         <div class="workspace-switcher">
-          <span class="workspace-icon">A</span>
-          <span class="workspace-name"><strong>My workspace</strong><small>Personal desk</small></span>
+          <span class="workspace-icon">♡</span>
+          <span class="workspace-name"><strong id="sidebar-name">Your diary</strong><small>A little place of your own</small></span>
           <span class="switcher-chevron" aria-hidden="true">⌄</span>
         </div>
 
-        <div class="sidebar-label">WORKSPACE</div>
+        <div class="sidebar-label">YOUR LITTLE WORLD</div>
         <nav class="main-nav">
-          <button class="nav-link is-active" type="button" data-view="desk">
+          <button class="nav-link is-active" type="button" data-view="diary">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
-            <span>My desk</span><span class="nav-count" id="nav-card-count">3</span>
+            <span>My diary</span><span class="nav-count" id="nav-entry-count">0</span>
           </button>
-          <button class="nav-link" type="button" id="new-note-button">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>New idea</span>
-          </button>
+          <button class="nav-link" type="button" data-view="ideas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6m-5 3h4m-2-19a7 7 0 0 0-4 12.7c.7.5 1 1.1 1 2.3h6c0-1.2.3-1.8 1-2.3A7 7 0 0 0 12 2Z"/></svg><span>My ideas</span><span class="nav-count" id="nav-card-count">3</span></button>
+          <button class="nav-link" type="button" data-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18m-13 4h.01M12 14h.01M16 14h.01M8 18h.01"/></svg><span>Calendar</span></button>
+          <button class="nav-link" type="button" data-view="reminders"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8 13h4"/></svg><span>Reminders</span><span class="nav-count" id="reminder-count">0</span></button>
+          <button class="nav-link" type="button" id="new-note-button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Write a page</span></button>
         </nav>
 
-        <div class="sidebar-label sidebar-label-spaced">YOUR SHORTCUTS</div>
+        <div class="sidebar-label sidebar-label-spaced">WHEN YOU NEED A NUDGE</div>
         <button class="shortcut-link" type="button" data-prompt="Help me turn a big goal into a simple plan I can start today.">
           <span class="shortcut-dot dot-sage"></span> Make a plan
         </button>
@@ -53,19 +55,20 @@
           <span class="privacy-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></svg>
           </span>
-          <strong>Your space, your data</strong>
-          <p>Your desk stays in this browser. AI chats go to your own Ollama when connected.</p>
+          <strong>Your pages are private</strong>
+          <p>Your diary is encrypted with your password and kept in this browser. Remember your password.</p>
         </div>
         <button class="profile-button" type="button" id="settings-button" aria-label="Open settings">
-          <span class="profile-avatar">T</span>
-          <span class="profile-copy"><strong>Traford</strong><small>Local workspace</small></span>
+          <span class="profile-avatar" id="sidebar-avatar">♡</span>
+          <span class="profile-copy"><strong id="sidebar-profile-name">Your profile</strong><small>Photo & settings</small></span>
           <span class="profile-more" aria-hidden="true">···</span>
         </button>
+        <button class="lock-button" id="lock-button" type="button">↪ Lock my diary</button>
       </aside>
 
       <main class="main-content" id="main-content">
         <header class="topbar">
-          <div class="breadcrumb"><span>My workspace</span><span class="breadcrumb-divider">/</span><strong>My desk</strong></div>
+          <div class="breadcrumb"><span id="breadcrumb-home">Your diary</span><span class="breadcrumb-divider">/</span><strong id="breadcrumb-view">My diary</strong></div>
           <div class="topbar-actions">
             <span class="connection-pill" id="connection-pill" data-state="checking">
               <span class="connection-dot"></span><span id="connection-label">Checking Ollama</span>
@@ -73,45 +76,59 @@
             <button class="icon-button" id="top-settings-button" type="button" aria-label="Settings" title="Settings">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1a1.7 1.7 0 1 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.3a1.7 1.7 0 1 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9h-.3a1.7 1.7 0 1 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2v-.3a1.7 1.7 0 1 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.3a1.7 1.7 0 1 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg>
             </button>
-            <span class="topbar-avatar" aria-label="Traford">T</span>
+            <span class="topbar-avatar" id="topbar-avatar" aria-label="Profile">♡</span>
           </div>
         </header>
 
         <section class="desk-content" aria-labelledby="desk-title">
           <div class="greeting-row">
             <div>
-              <div class="eyebrow"><span class="eyebrow-sparkle" aria-hidden="true">✳</span> YOUR SPACE TO THINK</div>
-              <h1 id="desk-title">A little room to <span>think big.</span></h1>
-              <p class="desk-subtitle">Keep the good ideas close. Take the next step when you’re ready.</p>
+              <div class="eyebrow"><span class="eyebrow-sparkle" aria-hidden="true">♡</span> A LITTLE PLACE, JUST FOR YOU</div>
+              <h1 id="desk-title">A book full of <span>you.</span></h1>
+              <p class="desk-subtitle" id="dedication-subtitle">A private place for your thoughts, little joys, and everything in between.</p>
             </div>
             <div class="greeting-date" id="greeting-date"></div>
           </div>
 
           <div class="desk-toolbar">
             <div class="section-heading">
-              <div><h2>Your ideas</h2><span class="idea-count" id="idea-count">3 ideas</span></div>
-              <p>A flexible canvas for the things on your mind.</p>
+              <div><h2>Today's page</h2><span class="idea-count" id="idea-count">Your story</span></div>
+              <p>A few quiet minutes for whatever is on your heart.</p>
             </div>
             <div class="toolbar-actions">
               <button class="quiet-button" id="present-button" type="button">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4m-4-9 3-3 2 2 3-4"/></svg>
-                <span>Present</span>
+                <span>Read together</span>
               </button>
               <button class="primary-button" id="add-idea-button" type="button">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                <span>Add an idea</span>
+                <span>Write a page</span>
               </button>
             </div>
           </div>
 
-          <div class="idea-grid" id="idea-grid" aria-live="polite"></div>
+          <div class="diary-book" id="diary-book" aria-live="polite"></div>
           <div class="desk-footer">
-            <span><span class="footer-sparkle">✳</span> Made for curious minds</span>
+            <span><span class="footer-sparkle">♡</span> A little love note, for every day</span>
             <span class="creator-credit">Created by <strong>Traford</strong> ·
               <a href="https://github.com/domiciandeogratius67-hub/traford-airdesk" target="_blank" rel="noreferrer">Source</a> ·
               <a href="./LICENSE">AGPL-3.0-or-later</a> · No warranty
             </span>
           </div>
+        </section>
+        <section class="content-view hidden-view" id="ideas-view" aria-label="Saved ideas">
+          <div class="view-heading"><div><span class="eyebrow">ALL THE THINGS YOU'RE DREAMING UP</span><h1>Your lovely <span>ideas.</span></h1><p class="desk-subtitle">Gather the little sparks you want to come back to.</p></div><button class="primary-button" id="idea-view-add" type="button">＋ Save an idea</button></div>
+          <div class="idea-grid" id="idea-grid" aria-live="polite"></div>
+        </section>
+        <section class="content-view hidden-view" id="calendar-view" aria-label="Diary calendar">
+          <div class="view-heading"><div><span class="eyebrow">LITTLE MOMENTS, ALL IN ONE PLACE</span><h1>Your <span>calendar.</span></h1><p class="desk-subtitle">See your diary pages and gentle reminders by date.</p></div><button class="primary-button" id="calendar-add-entry" type="button">＋ Write for a day</button></div>
+          <div class="calendar-card glass-card"><div class="calendar-toolbar"><button class="quiet-button" id="calendar-prev" type="button" aria-label="Previous month">←</button><h2 id="calendar-month"></h2><button class="quiet-button" id="calendar-next" type="button" aria-label="Next month">→</button><button class="quiet-button" id="calendar-today" type="button">Today</button></div><div class="calendar-grid calendar-weekdays" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div><div class="calendar-grid" id="calendar-days"></div></div>
+          <div class="calendar-selected glass-card" id="calendar-selected"></div>
+        </section>
+        <section class="content-view hidden-view" id="reminders-view" aria-label="Diary reminders">
+          <div class="view-heading"><div><span class="eyebrow">A GENTLE NUDGE, WHEN YOU NEED ONE</span><h1>Little <span>reminders.</span></h1><p class="desk-subtitle">Make a little space for the things that matter to you.</p></div><button class="primary-button" id="add-reminder-button" type="button">＋ Add a reminder</button></div>
+          <div class="notification-callout glass-card"><span>♡</span><div><strong>Let your diary remind you</strong><p>Allow browser notifications for a gentle reminder while this diary is open.</p></div><button class="quiet-button" id="enable-notifications" type="button">Turn on notifications</button></div>
+          <div class="reminder-list" id="reminder-list"></div>
         </section>
       </main>
 
@@ -121,7 +138,7 @@
             <span class="assistant-avatar" aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="M12 3.5v3m0 11v3m8.5-8.5h-3m-11 0h-3M18 6l-2.1 2.1m-7.8 7.8L6 18m12 0-2.1-2.1M8.1 8.1 6 6"/><circle cx="12" cy="12" r="4"/></svg>
             </span>
-            <div><strong>AirDesk AI</strong><span><span class="mini-status-dot" id="chat-status-dot"></span><span id="chat-status-label">Your thinking partner</span></span></div>
+            <div><strong>A little helper</strong><span><span class="mini-status-dot" id="chat-status-dot"></span><span id="chat-status-label">Your thinking partner</span></span></div>
           </div>
           <button class="icon-button chat-menu-button" id="new-chat-button" type="button" aria-label="Start a new chat" title="New chat">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
@@ -130,8 +147,8 @@
 
         <div class="chat-welcome" id="chat-welcome">
           <span class="welcome-orbit" aria-hidden="true"><span>✳</span></span>
-          <h2>Good ideas start<br>with a conversation.</h2>
-          <p>I’m here to help you think things through, make a plan, or just explore what’s possible.</p>
+          <h2>Need a hand<br>with your thoughts?</h2>
+          <p>Your little thinking partner can help you make a plan, write a note, or find the words.</p>
           <div class="suggestion-list">
             <button type="button" class="suggestion" data-prompt="I have an idea I want to explore. Can you help me shape it?"><span>✦</span> Help me shape an idea <span class="suggestion-arrow">↗</span></button>
             <button type="button" class="suggestion" data-prompt="Can you help me figure out the best next step for what I am working on?"><span>↗</span> Find my next step <span class="suggestion-arrow">↗</span></button>
@@ -154,14 +171,14 @@
               </button>
             </div>
           </div>
-          <p class="composer-note">AirDesk can make mistakes. Your chats are saved only in this browser.</p>
+          <p class="composer-note">Your chats are private to this browser. AI can make mistakes.</p>
         </div>
       </aside>
     </div>
 
     <dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
       <form method="dialog" class="dialog-close-form"><button class="icon-button" aria-label="Close settings">×</button></form>
-      <div class="dialog-heading"><span class="dialog-icon">⌘</span><div><h2 id="settings-title">Your AirDesk setup</h2><p>Connect your own local AI, on your terms.</p></div></div>
+      <div class="dialog-heading"><span class="dialog-icon">♡</span><div><h2 id="settings-title">Your little helper</h2><p>Connect your own local AI, on your terms.</p></div></div>
       <div class="settings-status" id="settings-status" data-state="checking"><span class="connection-dot"></span><span>Checking your local companion…</span></div>
       <label class="field-label" for="endpoint-input">Local companion address</label>
       <input id="endpoint-input" class="text-field" type="url" value="http://127.0.0.1:8765" autocomplete="url" spellcheck="false">
@@ -187,16 +204,72 @@
 
     <dialog class="note-dialog" id="note-dialog" aria-labelledby="note-title">
       <form method="dialog" class="dialog-close-form"><button class="icon-button" aria-label="Close">×</button></form>
-      <div class="dialog-heading"><span class="dialog-icon note-icon">✦</span><div><h2 id="note-title">Capture a good idea</h2><p>Small sparks can turn into big things.</p></div></div>
-      <label class="field-label" for="note-heading-input">Give it a name</label>
-      <input id="note-heading-input" class="text-field" maxlength="90" placeholder="A little idea…">
-      <label class="field-label note-body-label" for="note-body-input">What’s on your mind?</label>
-      <textarea id="note-body-input" class="text-field note-textarea" maxlength="1200" rows="5" placeholder="Write a few words, or get it all down…"></textarea>
+      <div class="dialog-heading"><span class="dialog-icon note-icon">♡</span><div><h2 id="note-title">Write a diary page</h2><p>No perfect words needed. This page is yours.</p></div></div>
+      <label class="field-label" for="note-heading-input">A title for this page</label>
+      <input id="note-heading-input" class="text-field" maxlength="90" placeholder="Today, I’m feeling…">
+      <label class="field-label note-body-label" for="note-date-input">Date</label>
+      <input id="note-date-input" class="text-field" type="date">
+      <label class="field-label note-body-label" for="note-body-input">Your thoughts</label>
+      <textarea id="note-body-input" class="text-field note-textarea" maxlength="12000" rows="6" placeholder="The lovely things, the hard things, the little things…"></textarea>
+      <label class="field-label" for="note-mood-input">A little mood</label>
+      <select id="note-mood-input" class="text-field"><option>💗 Soft & happy</option><option>🌷 Hopeful</option><option>☁️ A little cloudy</option><option>✨ Inspired</option><option>🌙 Quiet & thoughtful</option></select>
+
+      <label class="field-label" for="note-photo-input">Attach photos (optional)</label>
+      <input id="note-photo-input" class="text-field" type="file" accept="image/*" multiple>
+      <p class="field-hint">Photos are stored encrypted in your diary on this device. Keep images under 10MB before upload; they are resized for storage.</p>
+      <div id="note-photo-preview" class="photo-preview-grid" aria-live="polite"></div>
+
       <div class="dialog-actions">
         <button class="quiet-button" id="cancel-note-button" type="button">Cancel</button>
-        <button class="primary-button" id="save-note-button" type="button">Add to my desk</button>
+        <button class="primary-button" id="save-note-button" type="button">Save this page</button>
       </div>
     </dialog>
+
+    <dialog class="note-dialog reminder-dialog" id="reminder-dialog" aria-labelledby="reminder-title">
+      <form method="dialog" class="dialog-close-form"><button class="icon-button" aria-label="Close">×</button></form>
+      <div class="dialog-heading"><span class="dialog-icon">♡</span><div><h2 id="reminder-title">A gentle reminder</h2><p>Set a little nudge for yourself.</p></div></div>
+      <label class="field-label" for="reminder-title-input">What would you like to remember?</label><input id="reminder-title-input" class="text-field" maxlength="100" placeholder="Take a little walk…">
+      <label class="field-label" for="reminder-date-input">Day</label><input id="reminder-date-input" class="text-field" type="date">
+      <label class="field-label" for="reminder-time-input">Time (optional)</label><input id="reminder-time-input" class="text-field" type="time">
+      <div class="dialog-actions"><button class="quiet-button" id="cancel-reminder-button" type="button">Cancel</button><button class="primary-button" id="save-reminder-button" type="button">Save reminder</button></div>
+    </dialog>
+
+    <dialog class="note-dialog" id="idea-dialog" aria-labelledby="idea-title">
+      <form method="dialog" class="dialog-close-form"><button class="icon-button" aria-label="Close">×</button></form>
+      <div class="dialog-heading"><span class="dialog-icon note-icon">✦</span><div><h2 id="idea-title">Save a little idea</h2><p>For all the things you might do someday.</p></div></div>
+      <label class="field-label" for="idea-title-input">Give your idea a name</label><input id="idea-title-input" class="text-field" maxlength="90" placeholder="A tiny dream…">
+      <label class="field-label note-body-label" for="idea-body-input">Tell your future self about it</label><textarea id="idea-body-input" class="text-field note-textarea" maxlength="4000" rows="5" placeholder="It can be a sentence, a sketch in words, or a whole plan…"></textarea>
+      <div class="dialog-actions"><button class="quiet-button" id="cancel-idea-button" type="button">Cancel</button><button class="primary-button" id="save-idea-button" type="button">Save this idea</button></div>
+    </dialog>
+
+    <dialog class="settings-dialog profile-dialog" id="profile-dialog" aria-labelledby="profile-title">
+      <form method="dialog" class="dialog-close-form"><button class="icon-button" aria-label="Close profile">×</button></form>
+      <div class="dialog-heading"><span class="dialog-icon">♡</span><div><h2 id="profile-title">Your little profile</h2><p>Make your diary feel like yours.</p></div></div>
+      <div class="profile-photo-preview" id="profile-photo-preview"><span>♡</span></div>
+      <label class="quiet-button upload-photo-button" for="profile-photo-input">Choose a profile picture</label><input class="visually-hidden" id="profile-photo-input" type="file" accept="image/*">
+      <p class="field-hint">Your picture is kept inside your encrypted diary on this device.</p>
+      <label class="field-label" for="profile-name-input">The name you'd like to see</label><input class="text-field" id="profile-name-input" maxlength="50">
+      <div class="setup-callout"><strong>A little note from Traford</strong><span id="profile-dedication">This diary is dedicated to you, with love from Traford.</span></div>
+      <div class="dialog-actions"><button class="primary-button" id="save-profile-button" type="button">Save my profile</button></div>
+    </dialog>
+
+    <div class="welcome-gate" id="welcome-gate" hidden>
+      <div class="welcome-card glass-card">
+        <span class="welcome-heart" aria-hidden="true">♡</span>
+        <p class="eyebrow">A LITTLE BOOK, MADE WITH LOVE</p>
+        <h1 id="gate-title">A diary for <span>you.</span></h1>
+        <p class="gate-intro" id="gate-intro">A quiet little place for your memories, ideas, and every version of you.</p>
+        <form id="gate-form">
+          <label class="field-label" for="gate-name">What should I call you?</label><input class="text-field" id="gate-name" maxlength="50" autocomplete="given-name" required>
+          <label class="field-label" for="gate-password">Choose a password just for your diary</label><input class="text-field" id="gate-password" type="password" minlength="8" maxlength="128" autocomplete="new-password" required>
+          <label class="field-label" id="confirm-label" for="gate-confirm">Type your password one more time</label><input class="text-field" id="gate-confirm" type="password" minlength="8" maxlength="128" autocomplete="new-password" required>
+          <p class="gate-hint" id="gate-hint">Your diary is encrypted in this browser. Traford cannot see it. If you forget your password, this browser cannot recover your pages—please keep it somewhere safe.</p>
+          <p class="gate-error" id="gate-error" role="alert"></p>
+          <button class="primary-button gate-submit" id="gate-submit" type="submit">Open my little book ♡</button>
+        </form>
+        <p class="gate-signoff" id="gate-signoff">This diary is dedicated to you, with love from Traford.</p>
+      </div>
+    </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <footer class="mobile-credit">Created by Traford</footer>

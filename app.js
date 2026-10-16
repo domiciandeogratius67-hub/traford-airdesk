@@ -5,6 +5,8 @@ const STORAGE_KEYS = {
   messages: "traford-airdesk.messages.v1",
   settings: "traford-airdesk.settings.v1"
 };
+let vaultKey = null;
+let vaultData = null;
 const DEFAULT_SETTINGS = { endpoint: "http://127.0.0.1:8765", model: "qwen3", highContrast: false };
 const STARTER_CARDS = [
   {
@@ -44,8 +46,8 @@ const HELLO_MESSAGE = {
   time: Date.now()
 };
 
-let cards = loadStored(STORAGE_KEYS.cards, STARTER_CARDS);
-let messages = loadStored(STORAGE_KEYS.messages, []);
+let cards = [];
+let messages = [];
 let settings = { ...DEFAULT_SETTINGS, ...loadStored(STORAGE_KEYS.settings, {}) };
 let busy = false;
 let toastTimer = 0;
@@ -85,6 +87,11 @@ function loadStored(key, fallback) {
 }
 
 function store(key, value) {
+  if ((key === STORAGE_KEYS.cards || key === STORAGE_KEYS.messages) && vaultKey && vaultData) {
+    vaultData[key === STORAGE_KEYS.cards ? "cards" : "messages"] = value;
+    scheduleVaultSave();
+    return;
+  }
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
@@ -435,20 +442,10 @@ function init() {
   elements.modelInput.value = settings.model;
   checkConnection();
 
-  document.querySelector("#settings-button").addEventListener("click", openSettings);
   document.querySelector("#top-settings-button").addEventListener("click", openSettings);
   document.querySelector("#save-settings-button").addEventListener("click", saveSettings);
   document.querySelector("#check-connection-button").addEventListener("click", checkConnection);
-  document.querySelector("#add-idea-button").addEventListener("click", openNoteDialog);
-  document.querySelector("#new-note-button").addEventListener("click", openNoteDialog);
-  document.querySelector("#save-note-button").addEventListener("click", submitNote);
-  document.querySelector("#cancel-note-button").addEventListener("click", () => elements.noteDialog.close());
   document.querySelector("#new-chat-button").addEventListener("click", startNewChat);
-  document.querySelector("#present-button").addEventListener("click", (event) => {
-    const active = document.body.classList.toggle("presenting");
-    event.currentTarget.querySelector("span").textContent = active ? "Exit present" : "Present";
-    event.currentTarget.setAttribute("aria-pressed", String(active));
-  });
   elements.cardGrid.addEventListener("click", handleCardAction);
   elements.chatMessages.addEventListener("click", (event) => {
     if (!event.target.closest('[data-action="save-reply"]')) return;
@@ -480,5 +477,3 @@ function init() {
     }
   });
 }
-
-init();
