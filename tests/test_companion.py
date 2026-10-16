@@ -157,8 +157,11 @@ class CompanionHTTPTests(unittest.TestCase):
 
     def test_companion_exposes_only_the_named_static_files(self):
         with urlopen(f"{self.base_url}/", timeout=2) as response:
-            self.assertIn("Traford AirDesk", response.read().decode("utf-8"))
+            self.assertIn("Her little book", response.read().decode("utf-8"))
             self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+            self.assertIn("img-src 'self' data: blob:", response.headers["Content-Security-Policy"])
+        with urlopen(f"{self.base_url}/diary.js", timeout=2) as response:
+            self.assertIn("PBKDF2", response.read().decode("utf-8"))
         with self.assertRaises(HTTPError) as error:
             urlopen(f"{self.base_url}/README.md", timeout=2)
         self.assertEqual(error.exception.code, 404)

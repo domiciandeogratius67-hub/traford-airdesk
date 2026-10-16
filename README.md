@@ -1,18 +1,30 @@
-# Traford AirDesk
+# Her Little Book
 
-**A calm, local-first AI desk for ideas, plans, and conversations. Created by Traford.**
+**A personal diary, dedicated to you with love from Traford.**
 
-AirDesk brings a flexible idea board and a private AI chat together in one friendly workspace. Pin a thought, capture something before it drifts away, switch into presentation mode, enable higher contrast, or ask your local AI to help you find the next step.
+Her Little Book is a warm, pink, book-inspired diary for private pages, saved ideas, a calendar, gentle reminders, and a profile picture. Read your pages as an open book, use presentation mode to read together, or ask the optional local AI helper to think alongside you.
 
-The app is an original project. It takes inspiration from the spatial workspace and presentation concepts in [barehands](https://github.com/jaredrhod/barehands), but does not reuse its code. This project is independently licensed under AGPL-3.0-or-later.
+The interface is created by Traford and begins with the dedication: “This diary is dedicated to you, [her name], with love from Traford.” Your name fills in when the diary is set up.
 
-## Use the hosted app
+## Open the hosted diary
 
-After the first Pages deployment completes, open:
+Open the published diary:
 
 **https://domiciandeogratius67-hub.github.io/traford-airdesk/**
 
-GitHub Pages serves the static interface. Your cards and chat history are stored in this browser only. The hosted page cannot reach Ollama on your computer by itself; to use AI chat, run the small local companion below. The board works without Ollama.
+GitHub Pages serves the static interface. The first visit asks for a name and password; later visits ask for that password before the book opens. Pages, ideas, profile picture, reminders, and chat are encrypted in this browser and stay on this device/browser. **The password cannot be reset.** Forgetting it means the encrypted diary cannot be recovered.
+
+This is a personal, single-browser diary—not an account service. Your password does not authenticate a server, and cannot protect you if someone has access to your already-unlocked browser profile or the device itself. Lock the diary before leaving the device. The photo is stored in your encrypted browser data, resized on-device, and is not uploaded.
+
+## Send a copy to her (Windows)
+
+1. Download the project ZIP and extract the whole folder.
+2. Double-click **Open Her Little Book.bat**. The diary opens in her browser; it does not need Python or Ollama for diary pages, ideas, reminders, and photos. Keep the small minimized server window open while she uses it; close that window when finished.
+3. On her first visit, she chooses her name and password. Her diary is created on her computer and is separate from yours; the ZIP does not contain or copy your private diary.
+
+The launcher uses Python if it is already installed, enabling the optional Ollama chat. Without Python, it uses Windows PowerShell for the local site and shows AI as unavailable; the rest of the diary works offline.
+
+For backups, open the profile button and choose **Download encrypted backup**. Keep the `.hldiary` file private. Restore it with **Restore from backup** and the same password. Photos are encrypted and stored in IndexedDB rather than the browser's small local-storage quota. Browser data still does not sync; keep regular backups.
 
 ## Start chatting with local Ollama
 
@@ -24,16 +36,29 @@ GitHub Pages serves the static interface. Your cards and chat history are stored
    ```
 
    Keep Ollama running. You can use another installed model by changing the model name in AirDesk settings.
-3. Install Python 3.9 or later. From a copy of this repository, start the companion:
+3. Install Python 3.10 or later. From a copy of this repository, start the companion:
 
    ```sh
    python companion/server.py
    ```
 
    On some systems the command is `python3 companion/server.py` or `py companion/server.py`. The service listens only on `127.0.0.1:8765`; it does not listen on your network.
-4. Open the hosted AirDesk and select **Settings → Check connection**. If your browser asks permission for the hosted page to communicate with a local device, allow it to use the companion. Chromium-based browsers may require this local-network permission.
+4. Open the hosted diary and open the settings button; select **Check connection**. If your browser asks permission for the hosted page to communicate with a local device, allow it to use the companion. Chromium-based browsers may require this local-network permission.
 
-You can also run AirDesk completely locally by opening `http://127.0.0.1:8765` after starting the companion.
+You can also run the diary completely locally by opening `http://127.0.0.1:8765` after starting the companion.
+
+## Diary features
+
+- **Private book:** choose a name and password, then unlock the same encrypted local diary on return. AES-GCM encrypts the diary contents; PBKDF2 derives its key from the password.
+- **Diary pages:** save a dated, titled entry with a mood and up to 200 resized photos across your pages. Read pages in a two-page book, page through your history, or switch to “Read together” presentation mode.
+- **Ideas:** save and pin ideas separately from diary pages.
+- **Calendar:** browse months and see diary pages and reminders on their dates.
+- **Reminders:** set a date and optional time. In-page reminders work while the diary is open. Browser notifications are optional; they require permission and this page to remain open. There is no push service, so a closed browser cannot send reminders.
+- **Profile:** save a display name and an optional profile photo in the encrypted diary; download and restore encrypted backups.
+- **Daily love notes:** one of 61 original notes from Traford appears on the facing page, changing each day.
+- **Optional local AI:** keep Ollama on-device and ask the built-in helper for a little brainstorming.
+
+Diary text and profile data are encrypted in this browser's local storage; photo files are encrypted in IndexedDB. It is not synced automatically. Clearing browser site data removes the diary, so keep a backup.
 
 ### Privacy and safety boundary
 
@@ -61,13 +86,13 @@ Then open `http://127.0.0.1:8765`.
 
 ## GitHub Pages deployment
 
-The included [Pages workflow](.github/workflows/pages.yml) deploys the static app on every push to `main` and supports manual runs. In the repository, open **Settings → Pages** and select **GitHub Actions** as the build and deployment source. The workflow uses GitHub's Pages artifact and deployment actions; it does not use Jekyll or a separate `gh-pages` branch. Check **Actions → Deploy AirDesk to GitHub Pages** for the deployment URL and status.
+The included [Pages workflow](.github/workflows/pages.yml) deploys the static app on every push to `main` and the project preview branch, and supports manual runs. In the repository, open **Settings → Pages** and select **GitHub Actions** as the build and deployment source. The workflow uses GitHub's Pages artifact and deployment actions; it does not use Jekyll or a separate `gh-pages` branch. Check **Actions → Deploy AirDesk to GitHub Pages** for the deployment URL and status.
 
 For a fork, update the Pages URL in `companion/server.py`'s `ALLOWED_ORIGINS` to the fork owner's `https://<owner>.github.io` origin before deploying, then push that change. A repository path does not change the origin.
 
 ## A note on the original inspiration
 
-AirDesk is a new implementation, not a fork or code port. The spatial cards, a presentation view, and conversational interaction are broad product ideas that informed the direction. See [barehands](https://github.com/jaredrhod/barehands) for the independent project that sparked this exploration.
+Her Little Book is an original addition to the AirDesk project, not a fork or code port. The original spatial cards and conversational interaction were broad product ideas that informed AirDesk. See [barehands](https://github.com/jaredrhod/barehands) for the independent project that sparked the original exploration.
 
 ## License
 

@@ -2,7 +2,9 @@ name: Deploy AirDesk to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - domiciandeogratius67-hub-traford-airdesk-project
   workflow_dispatch:
 
 permissions:
@@ -28,7 +30,7 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir -p _site
-          cp index.html styles.css app.js LICENSE _site/
+          cp index.html styles.css app.js diary.js LICENSE _site/
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:

@@ -1,0 +1,17 @@
+HER LITTLE BOOK - MADE WITH LOVE FROM TRAFORD
+
+Windows: extract the whole ZIP folder, then double-click:
+
+    Open Her Little Book.bat
+
+The diary works without installing Python or Ollama. The small minimized
+server window must stay open while the book is being used. Close it to stop
+the local site.
+
+On the first visit, choose a name and password. The diary is saved only in
+that browser on that computer; this ZIP does not include Traford's diary.
+Use the profile button inside the diary to download an encrypted backup.
+Keep the backup and password somewhere private.
+
+Ollama chat is optional and needs Python plus Ollama installed. All the diary's
+pages, ideas, calendar, reminders, and photos work without AI.
