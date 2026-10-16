@@ -159,6 +159,7 @@ class CompanionHTTPTests(unittest.TestCase):
         with urlopen(f"{self.base_url}/", timeout=2) as response:
             self.assertIn("Her little book", response.read().decode("utf-8"))
             self.assertEqual(response.headers["X-Content-Type-Options"], "nosniff")
+            self.assertIn("img-src 'self' data: blob:", response.headers["Content-Security-Policy"])
         with urlopen(f"{self.base_url}/diary.js", timeout=2) as response:
             self.assertIn("PBKDF2", response.read().decode("utf-8"))
         with self.assertRaises(HTTPError) as error:

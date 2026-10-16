@@ -417,6 +417,7 @@ function handleCardAction(event) {
     renderCards();
     showToast(target.pinned ? "Idea pinned to the top of your desk." : "Idea unpinned.");
   } else if (actionButton.dataset.action === "delete") {
+    if (!window.confirm("Delete this idea? This cannot be undone unless you have an encrypted backup.")) return;
     cards = cards.filter((item) => item.id !== target.id);
     store(STORAGE_KEYS.cards, cards);
     renderCards();
@@ -425,6 +426,7 @@ function handleCardAction(event) {
 }
 
 function startNewChat() {
+  if (messages.length && !window.confirm("Clear this conversation? The messages cannot be recovered unless you have an encrypted backup.")) return;
   messages = [];
   store(STORAGE_KEYS.messages, messages);
   renderMessages();
@@ -472,7 +474,7 @@ function init() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && document.body.classList.contains("presenting")) {
       document.body.classList.remove("presenting");
-      document.querySelector("#present-button span").textContent = "Present";
+      document.querySelector("#present-button span").textContent = "Read together";
       document.querySelector("#present-button").setAttribute("aria-pressed", "false");
     }
   });

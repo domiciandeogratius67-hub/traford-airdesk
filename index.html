@@ -76,7 +76,7 @@
             <button class="icon-button" id="top-settings-button" type="button" aria-label="Settings" title="Settings">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1a1.7 1.7 0 1 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.3a1.7 1.7 0 1 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9h-.3a1.7 1.7 0 1 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2v-.3a1.7 1.7 0 1 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.3a1.7 1.7 0 1 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg>
             </button>
-            <span class="topbar-avatar" id="topbar-avatar" aria-label="Profile">♡</span>
+            <button class="topbar-avatar" id="topbar-avatar" type="button" aria-label="Open profile">♡</button>
           </div>
         </header>
 
@@ -247,9 +247,14 @@
       <div class="dialog-heading"><span class="dialog-icon">♡</span><div><h2 id="profile-title">Your little profile</h2><p>Make your diary feel like yours.</p></div></div>
       <div class="profile-photo-preview" id="profile-photo-preview"><span>♡</span></div>
       <label class="quiet-button upload-photo-button" for="profile-photo-input">Choose a profile picture</label><input class="visually-hidden" id="profile-photo-input" type="file" accept="image/*">
+      <button class="quiet-button remove-profile-photo-button" id="remove-profile-photo-button" type="button">Remove profile picture</button>
       <p class="field-hint">Your picture is kept inside your encrypted diary on this device.</p>
       <label class="field-label" for="profile-name-input">The name you'd like to see</label><input class="text-field" id="profile-name-input" maxlength="50">
       <div class="setup-callout"><strong>A little note from Traford</strong><span id="profile-dedication">This diary is dedicated to you, with love from Traford.</span></div>
+      <div class="backup-actions">
+        <button class="quiet-button" id="export-backup-button" type="button">Download encrypted backup</button>
+        <button class="quiet-button" id="import-backup-button" type="button">Restore from backup</button>
+      </div>
       <div class="dialog-actions"><button class="primary-button" id="save-profile-button" type="button">Save my profile</button></div>
     </dialog>
 
@@ -267,10 +272,12 @@
           <p class="gate-error" id="gate-error" role="alert"></p>
           <button class="primary-button gate-submit" id="gate-submit" type="submit">Open my little book ♡</button>
         </form>
+        <button class="quiet-button gate-restore" id="gate-import-backup" type="button">Restore an encrypted backup</button>
         <p class="gate-signoff" id="gate-signoff">This diary is dedicated to you, with love from Traford.</p>
       </div>
     </div>
 
+    <input class="visually-hidden" id="backup-file-input" type="file" accept=".hldiary,application/json">
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <footer class="mobile-credit">Created by Traford</footer>
   </body>

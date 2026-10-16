@@ -16,6 +16,16 @@ GitHub Pages serves the static interface. The first visit asks for a name and pa
 
 This is a personal, single-browser diary—not an account service. Your password does not authenticate a server, and cannot protect you if someone has access to your already-unlocked browser profile or the device itself. Lock the diary before leaving the device. The photo is stored in your encrypted browser data, resized on-device, and is not uploaded.
 
+## Send a copy to her (Windows)
+
+1. Download the project ZIP and extract the whole folder.
+2. Double-click **Open Her Little Book.bat**. The diary opens in her browser; it does not need Python or Ollama for diary pages, ideas, reminders, and photos. Keep the small minimized server window open while she uses it; close that window when finished.
+3. On her first visit, she chooses her name and password. Her diary is created on her computer and is separate from yours; the ZIP does not contain or copy your private diary.
+
+The launcher uses Python if it is already installed, enabling the optional Ollama chat. Without Python, it uses Windows PowerShell for the local site and shows AI as unavailable; the rest of the diary works offline.
+
+For backups, open the profile button and choose **Download encrypted backup**. Keep the `.hldiary` file private. Restore it with **Restore from backup** and the same password. Photos are encrypted and stored in IndexedDB rather than the browser's small local-storage quota. Browser data still does not sync; keep regular backups.
+
 ## Start chatting with local Ollama
 
 1. Install [Ollama](https://ollama.com/download).
@@ -26,7 +36,7 @@ This is a personal, single-browser diary—not an account service. Your password
    ```
 
    Keep Ollama running. You can use another installed model by changing the model name in AirDesk settings.
-3. Install Python 3.9 or later. From a copy of this repository, start the companion:
+3. Install Python 3.10 or later. From a copy of this repository, start the companion:
 
    ```sh
    python companion/server.py
@@ -40,15 +50,15 @@ You can also run the diary completely locally by opening `http://127.0.0.1:8765`
 ## Diary features
 
 - **Private book:** choose a name and password, then unlock the same encrypted local diary on return. AES-GCM encrypts the diary contents; PBKDF2 derives its key from the password.
-- **Diary pages:** save a dated, titled entry with a mood. Read pages in a two-page book, page through your history, or switch to “Read together” presentation mode.
+- **Diary pages:** save a dated, titled entry with a mood and up to 200 resized photos across your pages. Read pages in a two-page book, page through your history, or switch to “Read together” presentation mode.
 - **Ideas:** save and pin ideas separately from diary pages.
 - **Calendar:** browse months and see diary pages and reminders on their dates.
 - **Reminders:** set a date and optional time. In-page reminders work while the diary is open. Browser notifications are optional; they require permission and this page to remain open. There is no push service, so a closed browser cannot send reminders.
-- **Profile:** save a display name and an optional profile photo in the encrypted diary.
+- **Profile:** save a display name and an optional profile photo in the encrypted diary; download and restore encrypted backups.
 - **Daily love notes:** one of 61 original notes from Traford appears on the facing page, changing each day.
 - **Optional local AI:** keep Ollama on-device and ask the built-in helper for a little brainstorming.
 
-Browser storage is local to this device and browser. It is not synced or backed up automatically. Clear browser site data and the diary is removed.
+Diary text and profile data are encrypted in this browser's local storage; photo files are encrypted in IndexedDB. It is not synced automatically. Clearing browser site data removes the diary, so keep a backup.
 
 ### Privacy and safety boundary
 

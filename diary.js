@@ -79,6 +79,10 @@ let selectedDate = localDateString(new Date());
 let calendarDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 let pendingPhoto = null;
 let entryAttachments = []; // photo ids attached to the entry being edited
+let pendingEntryPhotos = new Map();
+let photoPreviewGeneration = 0;
+let photoPreviewUrls = [];
+let entryPhotoUrls = [];
 let diarySalt = null;
 let workspaceInitialized = false;
 let vaultSaveTimer = 0;
@@ -144,6 +148,7 @@ function scheduleVaultSave() {
   window.clearTimeout(vaultSaveTimer);
   vaultSaveTimer = window.setTimeout(() => {
     vaultWriteQueue = vaultWriteQueue
+      .catch(() => {})
       .then(encryptVault)
       .catch((error) => showToast(error.message || "Your diary could not be saved."));
   }, 120);
@@ -152,6 +157,7 @@ function scheduleVaultSave() {
 async function flushVaultSave() {
   window.clearTimeout(vaultSaveTimer);
   vaultWriteQueue = vaultWriteQueue
+    .catch(() => {})
     .then(encryptVault)
     .catch((error) => {
       showToast(error.message || "Your diary could not be saved.");
@@ -162,6 +168,267 @@ async function flushVaultSave() {
 
 const MAX_PHOTOS = 200;
 const MAX_PHOTO_BYTES = 1_200_000; // ~1.2MB target after resize
+let photoDatabasePromise = null;
+
+function openPhotoDatabase() {
+  if (photoDatabasePromise) return photoDatabasePromise;
+  photoDatabasePromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open("traford-diary-photo-store", 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains("photos")) {
+        request.result.createObjectStore("photos", { keyPath: "id" });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => {
+      photoDatabasePromise = null;
+      reject(new Error("This browser could not open secure photo storage."));
+    };
+  });
+  return photoDatabasePromise;
+}
+
+async function runPhotoTransaction(mode, operation) {
+  const database = await openPhotoDatabase();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction("photos", mode);
+    const store = transaction.objectStore("photos");
+    let result;
+    try {
+      result = operation(store);
+    } catch (error) {
+      transaction.abort();
+      reject(error);
+      return;
+    }
+    transaction.oncomplete = () => resolve(result);
+    transaction.onerror = () => reject(transaction.error || new Error("Photo storage failed."));
+    transaction.onabort = () => reject(transaction.error || new Error("Photo storage was cancelled."));
+  });
+}
+
+async function getAllPhotoRecords() {
+  const database = await openPhotoDatabase();
+  return new Promise((resolve, reject) => {
+    const request = database.transaction("photos", "readonly").objectStore("photos").getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(new Error("Saved photos could not be read."));
+  });
+}
+
+async function writeEncryptedPhoto(id, blob) {
+  if (!vaultKey) throw new Error("Unlock your diary before adding photos.");
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    vaultKey,
+    await blob.arrayBuffer()
+  );
+  await runPhotoTransaction("readwrite", (store) => store.put({
+    id,
+    iv: base64FromBytes(iv),
+    ciphertext: base64FromBytes(new Uint8Array(ciphertext))
+  }));
+}
+
+async function readDecryptedPhoto(id) {
+  if (!vaultKey) throw new Error("Unlock your diary to view its photos.");
+  const database = await openPhotoDatabase();
+  const record = await new Promise((resolve, reject) => {
+    const request = database.transaction("photos", "readonly").objectStore("photos").get(id);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(new Error("Saved photo could not be read."));
+  });
+  if (!record) throw new Error("This photo is missing from the diary's local storage.");
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: bytesFromBase64(record.iv) },
+    vaultKey,
+    bytesFromBase64(record.ciphertext)
+  );
+  return new Blob([plaintext], { type: "image/jpeg" });
+}
+
+async function replacePhotoRecords(records) {
+  await runPhotoTransaction("readwrite", (store) => {
+    store.clear();
+    for (const record of records) store.put(record);
+  });
+}
+
+function validBackupRecord(record) {
+  if (!record || record.version !== 1 || record.iterations !== PBKDF2_ITERATIONS) return false;
+  if (typeof record.salt !== "string" || typeof record.iv !== "string" || typeof record.ciphertext !== "string") return false;
+  try {
+    return bytesFromBase64(record.salt).length === 16
+      && bytesFromBase64(record.iv).length === 12
+      && bytesFromBase64(record.ciphertext).length >= 16;
+  } catch {
+    return false;
+  }
+}
+
+async function exportEncryptedBackup() {
+  if (!vaultKey || !vaultData) return;
+  try {
+    await flushVaultSave();
+    const record = JSON.parse(localStorage.getItem(DIARY_VAULT_KEY) || "null");
+    const photoRecords = await getAllPhotoRecords();
+    const backup = {
+      format: "traford-her-little-book-backup",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      vault: record,
+      photos: photoRecords.map((photo) => ({
+        id: photo.id,
+        iv: photo.iv,
+        ciphertext: photo.ciphertext
+      }))
+    };
+    const blob = new Blob([JSON.stringify(backup)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `her-little-book-backup-${localDateString(new Date())}.hldiary`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast("Your encrypted backup has been downloaded. Keep it somewhere private.");
+  } catch (error) {
+    showToast(error.message || "The encrypted backup could not be created.");
+  }
+}
+
+function showBackupMessage(message) {
+  if (document.body.classList.contains("diary-locked")) {
+    document.querySelector("#gate-error").textContent = message;
+  } else {
+    showToast(message);
+  }
+}
+
+function validateBackup(backup) {
+  if (!backup || backup.format !== "traford-her-little-book-backup" || backup.version !== 1) {
+    throw new Error("That file is not a Her Little Book backup.");
+  }
+  if (!validBackupRecord(backup.vault)) {
+    throw new Error("That backup is damaged or uses an unsupported version.");
+  }
+  if (!Array.isArray(backup.photos) || backup.photos.length > MAX_PHOTOS) {
+    throw new Error(`A backup can contain up to ${MAX_PHOTOS} photos.`);
+  }
+  const ids = new Set();
+  const photos = backup.photos.map((photo) => {
+    if (!photo || typeof photo.id !== "string" || !photo.id || ids.has(photo.id)
+      || typeof photo.iv !== "string" || typeof photo.ciphertext !== "string") {
+      throw new Error("The backup contains an invalid photo record.");
+    }
+    ids.add(photo.id);
+    let iv;
+    let ciphertext;
+    try {
+      iv = bytesFromBase64(photo.iv);
+      ciphertext = bytesFromBase64(photo.ciphertext);
+    } catch {
+      throw new Error("The backup contains an unreadable photo.");
+    }
+    if (iv.length !== 12 || ciphertext.length < 16 || ciphertext.length > 2_000_000) {
+      throw new Error("The backup contains a photo outside the supported size.");
+    }
+    return { id: photo.id, iv: photo.iv, ciphertext: photo.ciphertext };
+  });
+  return photos;
+}
+
+async function importEncryptedBackup(event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+  if (file.size > 500 * 1024 * 1024) {
+    showBackupMessage("That backup is too large to restore in this browser.");
+    return;
+  }
+  if (localStorage.getItem(DIARY_VAULT_KEY) && !window.confirm("Replace the diary currently saved in this browser with the selected backup? Download a backup first if you want to keep it.")) return;
+  try {
+    const backup = JSON.parse(await file.text());
+    const records = validateBackup(backup);
+    const password = window.prompt("Enter the password used to create this backup. The backup will not be installed unless the password is correct.");
+    if (password === null) return;
+    try {
+      const salt = bytesFromBase64(backup.vault.salt);
+      const iv = bytesFromBase64(backup.vault.iv);
+      const key = await deriveDiaryKey(password, salt);
+      const plaintext = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv },
+        key,
+        bytesFromBase64(backup.vault.ciphertext)
+      );
+      const importedVault = validateVault(JSON.parse(new TextDecoder().decode(plaintext)));
+      const recordIds = new Set(records.map((record) => record.id));
+      if (importedVault.photos.some((photo) => !photo || typeof photo.id !== "string" || !recordIds.has(photo.id))) {
+        throw new Error("The backup is missing one or more saved photos.");
+      }
+      for (const entry of importedVault.entries) {
+        if (Array.isArray(entry.attachments) && entry.attachments.some((id) => !recordIds.has(id))) {
+          throw new Error("The backup contains a page with a missing photo.");
+        }
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "OperationError") {
+        throw new Error("That password did not open this backup. The current diary has not been changed.");
+      }
+      throw error;
+    }
+    const oldVault = localStorage.getItem(DIARY_VAULT_KEY);
+    const oldPhotos = await getAllPhotoRecords();
+    if (vaultKey) await flushVaultSave();
+    await replacePhotoRecords(records);
+    try {
+      localStorage.setItem(DIARY_VAULT_KEY, JSON.stringify(backup.vault));
+    } catch (error) {
+      await replacePhotoRecords(oldPhotos);
+      throw error;
+    }
+    if (document.querySelector("#profile-dialog").open) document.querySelector("#profile-dialog").close();
+    if (!oldVault) localStorage.removeItem(STORAGE_KEYS.cards);
+    vaultKey = null;
+    vaultData = null;
+    diarySalt = null;
+    cards = [];
+    messages = [];
+    showGate(true);
+    document.querySelector("#gate-error").textContent = "Backup restored. Enter the password used when it was created.";
+  } catch (error) {
+    const message = error instanceof SyntaxError
+      ? "That backup file could not be read."
+      : error.message || "The backup could not be restored.";
+    showBackupMessage(message);
+  }
+}
+
+async function migrateLegacyPhotos() {
+  const legacy = vaultData.photos.filter((photo) => typeof photo.dataUrl === "string");
+  if (!legacy.length) return;
+  const migrated = [];
+  try {
+    for (const photo of legacy) {
+      const separator = photo.dataUrl.indexOf(",");
+      if (separator < 0 || !photo.dataUrl.slice(0, separator).includes(";base64")) {
+        throw new Error("An older photo has an unsupported format.");
+      }
+      const imageBytes = bytesFromBase64(photo.dataUrl.slice(separator + 1));
+      const blob = new Blob([imageBytes], { type: "image/jpeg" });
+      await writeEncryptedPhoto(photo.id, blob);
+      migrated.push({ id: photo.id, createdAt: photo.createdAt || Date.now() });
+    }
+  } catch (error) {
+    throw new Error(`Older photos could not be moved into secure storage: ${error.message}`);
+  }
+  vaultData.photos = [
+    ...vaultData.photos.filter((photo) => typeof photo.dataUrl !== "string"),
+    ...migrated
+  ];
+  scheduleVaultSave();
+  await flushVaultSave();
+}
 
 function emptyVault(name) {
   return {
@@ -180,7 +447,7 @@ function validateVault(data) {
   if (!data || data.version !== 1 || !data.profile || typeof data.profile.name !== "string") {
     throw new Error("This diary file is not in a format this version can open.");
   }
-  for (const key of ["entries", "reminders", "firedReminders", "cards", "messages"]) {
+  for (const key of ["entries", "reminders", "firedReminders", "cards", "messages", "photos"]) {
     if (!Array.isArray(data[key])) data[key] = [];
   }
   if (data.profile.photo !== null && typeof data.profile.photo !== "string") {
@@ -208,6 +475,7 @@ async function createDiary(name, password) {
   vaultData.messages = loadLegacyItems(STORAGE_KEYS.messages);
   vaultKey = key;
   try {
+    await replacePhotoRecords([]);
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const ciphertext = await crypto.subtle.encrypt(
       { name: "AES-GCM", iv },
@@ -251,6 +519,7 @@ async function unlockDiary(password) {
     vaultData = validateVault(parsed);
     vaultKey = key;
     diarySalt = salt;
+    await migrateLegacyPhotos();
     localStorage.removeItem(STORAGE_KEYS.cards);
     localStorage.removeItem(STORAGE_KEYS.messages);
   } catch (error) {
@@ -334,6 +603,8 @@ function sortedEntries() {
 
 function renderDiary() {
   if (!vaultData) return;
+  for (const url of entryPhotoUrls) URL.revokeObjectURL(url);
+  entryPhotoUrls = [];
   const entries = sortedEntries();
   const today = localDateString(new Date());
   entryCursor = Math.max(0, Math.min(entryCursor, Math.max(entries.length - 1, 0)));
@@ -349,6 +620,7 @@ function renderDiary() {
     ? `<div class="book-page-date">${formatDiaryDate(current.date)} <span>${escapeDiaryText(current.mood || "A little moment")}</span></div>
        <h2 class="book-entry-title">${escapeDiaryText(current.title || "A day in my life")}</h2>
        <div class="book-entry-body">${escapeDiaryText(current.body || "").replace(/\n/g, "<br>")}</div>
+       <div class="entry-photo-gallery" id="entry-photo-gallery" aria-label="Photos attached to this page"></div>
        <div class="book-entry-actions"><button class="quiet-button" type="button" data-entry-action="edit" data-id="${escapeDiaryText(current.id)}">Edit this page</button><button class="quiet-button" type="button" data-entry-action="delete" data-id="${escapeDiaryText(current.id)}">Remove page</button></div>`
     : `<div class="book-empty"><span>♡</span><h2>Your first page is waiting.</h2><p>Write about today, a little dream, or anything you'd like to remember.</p><button class="primary-button" type="button" id="book-first-entry">Write your first page</button></div>`;
   document.querySelector("#diary-book").innerHTML = `
@@ -370,6 +642,37 @@ function renderDiary() {
   document.querySelector("#book-older")?.addEventListener("click", () => { entryCursor += 1; renderDiary(); });
   document.querySelector("#book-newer")?.addEventListener("click", () => { entryCursor -= 1; renderDiary(); });
   document.querySelector("#book-first-entry")?.addEventListener("click", () => openEntryDialog());
+  if (current?.attachments?.length) renderEntryPhotoGallery(current);
+}
+
+async function renderEntryPhotoGallery(entry) {
+  const host = document.querySelector("#entry-photo-gallery");
+  if (!host) return;
+  for (const id of entry.attachments) {
+    try {
+      const blob = await readDecryptedPhoto(id);
+      if (!host.isConnected) return;
+      const objectUrl = URL.createObjectURL(blob);
+      entryPhotoUrls.push(objectUrl);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.title = "Open this memory at full size";
+      const image = document.createElement("img");
+      image.src = objectUrl;
+      image.alt = `Memory from ${formatDiaryDate(entry.date)}`;
+      link.append(image);
+      host.append(link);
+    } catch (error) {
+      if (host.isConnected) {
+        const warning = document.createElement("span");
+        warning.textContent = "A photo could not be opened.";
+        host.append(warning);
+      }
+      console.error("Diary photo display failed:", error);
+    }
+  }
 }
 
 function formatDiaryDate(value) {
@@ -383,14 +686,14 @@ function openEntryDialog(entry = null, date = localDateString(new Date())) {
   document.querySelector("#note-date-input").value = entry?.date || date;
   document.querySelector("#note-mood-input").value = entry?.mood || "💗 Soft & happy";
   document.querySelector("#note-title").textContent = entry ? "Turn the page" : "Write a diary page";
-  // prepare attachments preview and selection
   entryAttachments = entry?.attachments ? [...entry.attachments] : [];
+  pendingEntryPhotos = new Map();
   renderNotePhotoPreview();
   elements.noteDialog.showModal();
   window.setTimeout(() => elements.noteHeading.focus(), 50);
 }
 
-function saveEntry() {
+async function saveEntry() {
   const title = elements.noteHeading.value.trim();
   const body = elements.noteBody.value.trim();
   const date = document.querySelector("#note-date-input").value;
@@ -403,6 +706,21 @@ function saveEntry() {
     return;
   }
   const existing = vaultData.entries.find((item) => item.id === editingEntryId);
+  const previousVaultEntries = structuredClone(vaultData.entries);
+  const previousPhotos = structuredClone(vaultData.photos);
+  const addedPhotoIds = [];
+  try {
+    for (const [id, blob] of pendingEntryPhotos) {
+      await writeEncryptedPhoto(id, blob);
+      addedPhotoIds.push(id);
+    }
+  } catch (error) {
+    showToast(error.message || "The photos could not be saved.");
+    for (const id of addedPhotoIds) {
+      await runPhotoTransaction("readwrite", (store) => store.delete(id)).catch(() => {});
+    }
+    return;
+  }
   const entry = {
     id: editingEntryId || makeId(),
     title: title || "A day in my life",
@@ -414,7 +732,32 @@ function saveEntry() {
   };
   if (existing) Object.assign(existing, entry);
   else vaultData.entries.push(entry);
+  for (const [id] of pendingEntryPhotos) {
+    vaultData.photos.push({ id, createdAt: Date.now() });
+  }
+  const usedPhotoIds = new Set(
+    vaultData.entries.flatMap((savedEntry) => Array.isArray(savedEntry.attachments) ? savedEntry.attachments : [])
+  );
+  const removedPhotoIds = vaultData.photos.filter((photo) => !usedPhotoIds.has(photo.id)).map((photo) => photo.id);
+  vaultData.photos = vaultData.photos.filter((photo) => usedPhotoIds.has(photo.id));
   scheduleVaultSave();
+  try {
+    await flushVaultSave();
+  } catch {
+    vaultData.entries = previousVaultEntries;
+    vaultData.photos = previousPhotos;
+    for (const id of addedPhotoIds) {
+      await runPhotoTransaction("readwrite", (store) => store.delete(id)).catch(() => {});
+    }
+    return;
+  }
+  for (const id of removedPhotoIds) {
+    await runPhotoTransaction("readwrite", (store) => store.delete(id)).catch((error) => {
+      console.error("Unused diary photo cleanup failed:", error);
+    });
+  }
+  pendingEntryPhotos.clear();
+  entryAttachments = [];
   entryCursor = 0;
   selectedDate = date;
   renderDiary();
@@ -427,36 +770,28 @@ async function processImageFile(file) {
   if (!file.type.startsWith("image/")) throw new Error("Only images are allowed.");
   if (file.size > 10 * 1024 * 1024) throw new Error("Choose an image smaller than 10 MB.");
   const bitmap = await createImageBitmap(file);
-  const maxDimension = 1024;
-  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
+  const scale = Math.min(1, 1024 / Math.max(bitmap.width, bitmap.height));
   canvas.width = Math.max(1, Math.round(bitmap.width * scale));
   canvas.height = Math.max(1, Math.round(bitmap.height * scale));
   canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
-  // try to produce a blob under MAX_PHOTO_BYTES by reducing quality if needed
-  let quality = 0.78;
-  for (let i = 0; i < 5; i++) {
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
-    if (!blob) throw new Error("Could not prepare image.");
-    if (blob.size <= MAX_PHOTO_BYTES || quality <= 0.4) {
-      return await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve({ dataUrl: reader.result, size: blob.size });
-        reader.onerror = () => reject(new Error("Could not read image."));
-        reader.readAsDataURL(blob);
-      });
+  for (let dimensionPass = 0; dimensionPass < 8; dimensionPass += 1) {
+    for (const quality of [0.78, 0.62, 0.46, 0.3, 0.2]) {
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+      if (!blob) throw new Error("Could not prepare image.");
+      if (blob.size <= MAX_PHOTO_BYTES) return blob;
     }
-    quality -= 0.12;
+    if (Math.max(canvas.width, canvas.height) <= 128) break;
+    const smaller = document.createElement("canvas");
+    smaller.width = Math.max(1, Math.round(canvas.width * 0.75));
+    smaller.height = Math.max(1, Math.round(canvas.height * 0.75));
+    smaller.getContext("2d").drawImage(canvas, 0, 0, smaller.width, smaller.height);
+    canvas.width = smaller.width;
+    canvas.height = smaller.height;
+    canvas.getContext("2d").drawImage(smaller, 0, 0);
   }
-  // fallback: return last available blob
-  const fallbackBlob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.4));
-  return await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve({ dataUrl: reader.result, size: fallbackBlob.size });
-    reader.onerror = () => reject(new Error("Could not read image."));
-    reader.readAsDataURL(fallbackBlob);
-  });
+  throw new Error("This picture could not be resized small enough to save safely.");
 }
 
 async function handleNotePhotos(event) {
@@ -465,16 +800,15 @@ async function handleNotePhotos(event) {
   if (!files.length) return;
   if (!vaultData) { showToast("Open your diary first."); return; }
   for (const file of files) {
-    if (vaultData.photos.length >= MAX_PHOTOS) {
+    if (vaultData.photos.length + pendingEntryPhotos.size >= MAX_PHOTOS) {
       showToast(`Your diary already has ${MAX_PHOTOS} photos. Remove a few to add more.`);
       break;
     }
     try {
-      const { dataUrl } = await processImageFile(file);
+      const blob = await processImageFile(file);
       const id = makeId();
-      vaultData.photos.push({ id, dataUrl, createdAt: Date.now() });
+      pendingEntryPhotos.set(id, blob);
       entryAttachments.push(id);
-      scheduleVaultSave();
     } catch (error) {
       showToast(error.message || "One photo could not be processed.");
     }
@@ -482,8 +816,11 @@ async function handleNotePhotos(event) {
   renderNotePhotoPreview();
 }
 
-function renderNotePhotoPreview() {
+async function renderNotePhotoPreview() {
   const host = document.querySelector("#note-photo-preview");
+  const generation = ++photoPreviewGeneration;
+  for (const url of photoPreviewUrls) URL.revokeObjectURL(url);
+  photoPreviewUrls = [];
   host.replaceChildren();
   const count = entryAttachments.length;
   if (!count) {
@@ -491,27 +828,32 @@ function renderNotePhotoPreview() {
     return;
   }
   for (const id of entryAttachments) {
-    const photo = vaultData.photos.find((p) => p.id === id);
-    if (!photo) continue;
+    let blob = pendingEntryPhotos.get(id);
+    if (!blob) {
+      try {
+        blob = await readDecryptedPhoto(id);
+      } catch (error) {
+        if (generation === photoPreviewGeneration) showToast(error.message || "A saved photo could not be opened.");
+        continue;
+      }
+    }
+    if (generation !== photoPreviewGeneration) return;
     const wrap = document.createElement("div");
     wrap.className = "photo-thumb";
     const img = document.createElement("img");
-    img.src = photo.dataUrl;
+    const objectUrl = URL.createObjectURL(blob);
+    photoPreviewUrls.push(objectUrl);
+    img.src = objectUrl;
     img.alt = "Attached photo";
     const remove = document.createElement("button");
     remove.className = "remove-thumb";
     remove.title = "Remove this photo";
+    remove.setAttribute("aria-label", "Remove photo from this page");
     remove.type = "button";
     remove.textContent = "×";
     remove.addEventListener("click", () => {
-      // permanently remove photo
-      vaultData.photos = vaultData.photos.filter((p) => p.id !== id);
-      // remove references in any entries
-      for (const e of vaultData.entries) {
-        if (Array.isArray(e.attachments)) e.attachments = e.attachments.filter((aid) => aid !== id);
-      }
       entryAttachments = entryAttachments.filter((aid) => aid !== id);
-      scheduleVaultSave();
+      pendingEntryPhotos.delete(id);
       renderNotePhotoPreview();
     });
     wrap.appendChild(img);
@@ -610,6 +952,7 @@ function renderReminders() {
   }
   host.innerHTML = sorted.map((reminder) => `<article class="reminder-item glass-card"><span class="reminder-heart">♡</span><div class="reminder-copy"><strong>${escapeDiaryText(reminder.title)}</strong><span>${escapeDiaryText(formatDiaryDate(reminder.date))}${reminder.time ? ` · ${escapeDiaryText(reminder.time)}` : ""}</span></div><button class="card-action" type="button" data-remove-reminder="${escapeDiaryText(reminder.id)}" aria-label="Remove reminder">×</button></article>`).join("");
   host.querySelectorAll("[data-remove-reminder]").forEach((button) => button.addEventListener("click", () => {
+    if (!window.confirm("Remove this reminder?")) return;
     vaultData.reminders = vaultData.reminders.filter((item) => item.id !== button.dataset.removeReminder);
     scheduleVaultSave();
     renderReminders();
@@ -647,12 +990,16 @@ async function enableNotifications() {
     showToast("This browser does not support notifications. In-diary reminders still work while this page is open.");
     return;
   }
-  const permission = await Notification.requestPermission();
-  if (permission === "granted") {
-    showToast("Notifications are on. I'll give you a gentle nudge while your diary is open.");
-    checkDueReminders();
-  } else {
-    showToast("Notifications stayed off. Your reminders are still saved in your diary.");
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      showToast("Notifications are on. I'll give you a gentle nudge while your diary is open.");
+      checkDueReminders();
+    } else {
+      showToast("Notifications stayed off. Your reminders are still saved in your diary.");
+    }
+  } catch (error) {
+    showToast(error.message || "Notifications could not be enabled in this browser.");
   }
 }
 
@@ -754,6 +1101,12 @@ async function handleProfilePhoto(event) {
   }
 }
 
+function openProfileDialog() {
+  pendingPhoto = null;
+  updateProfileUI();
+  document.querySelector("#profile-dialog").showModal();
+}
+
 function saveProfile() {
   const name = document.querySelector("#profile-name-input").value.trim();
   if (!name) {
@@ -768,6 +1121,18 @@ function saveProfile() {
   renderDiary();
   document.querySelector("#profile-dialog").close();
   showToast("Your profile has been tucked into your diary. ♡");
+}
+
+function removeProfilePhoto() {
+  if (!vaultData.profile.photo) {
+    showToast("There is no profile picture to remove.");
+    return;
+  }
+  pendingPhoto = null;
+  vaultData.profile.photo = null;
+  scheduleVaultSave();
+  updateProfileUI();
+  showToast("Your profile picture was removed.");
 }
 
 async function lockDiary() {
@@ -785,15 +1150,17 @@ async function lockDiary() {
 }
 
 function bindDiaryControls() {
-  document.querySelector("#settings-button").addEventListener("click", () => {
-    pendingPhoto = null;
-    updateProfileUI();
-    document.querySelector("#profile-dialog").showModal();
-  });
+  document.querySelector("#settings-button").addEventListener("click", openProfileDialog);
+  document.querySelector("#topbar-avatar").addEventListener("click", openProfileDialog);
   document.querySelector("#lock-button").addEventListener("click", lockDiary);
   document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => showView(button.dataset.view)));
   document.querySelector("#new-note-button").addEventListener("click", () => openEntryDialog());
   document.querySelector("#save-note-button").addEventListener("click", saveEntry);
+  document.querySelector("#cancel-note-button").addEventListener("click", () => {
+    pendingEntryPhotos.clear();
+    entryAttachments = [];
+    document.querySelector("#note-dialog").close();
+  });
   document.querySelector("#add-idea-button").addEventListener("click", openEntryDialog);
   document.querySelector("#calendar-add-entry").addEventListener("click", () => openEntryDialog(null, selectedDate));
   document.querySelector("#idea-view-add").addEventListener("click", openIdeaDialog);
@@ -804,16 +1171,38 @@ function bindDiaryControls() {
     }
   });
   document.querySelector("#cancel-idea-button").addEventListener("click", () => document.querySelector("#idea-dialog").close());
-  document.querySelector("#diary-book").addEventListener("click", (event) => {
+  document.querySelector("#diary-book").addEventListener("click", async (event) => {
     const button = event.target.closest("[data-entry-action]");
     if (!button) return;
     const entry = vaultData.entries.find((item) => item.id === button.dataset.id);
     if (!entry) return;
     if (button.dataset.entryAction === "edit") openEntryDialog(entry);
     else {
+      if (!window.confirm("Remove this diary page? This cannot be undone unless you have an encrypted backup.")) return;
+      const previousEntries = structuredClone(vaultData.entries);
+      const previousPhotos = structuredClone(vaultData.photos);
       vaultData.entries = vaultData.entries.filter((item) => item.id !== entry.id);
+      const usedPhotoIds = new Set(
+        vaultData.entries.flatMap((savedEntry) => Array.isArray(savedEntry.attachments) ? savedEntry.attachments : [])
+      );
+      const removedPhotoIds = vaultData.photos.filter((photo) => !usedPhotoIds.has(photo.id)).map((photo) => photo.id);
+      vaultData.photos = vaultData.photos.filter((photo) => usedPhotoIds.has(photo.id));
       entryCursor = 0;
       scheduleVaultSave();
+      try {
+        await flushVaultSave();
+      } catch {
+        vaultData.entries = previousEntries;
+        vaultData.photos = previousPhotos;
+        renderDiary();
+        renderCalendar();
+        return;
+      }
+      for (const id of removedPhotoIds) {
+        await runPhotoTransaction("readwrite", (store) => store.delete(id)).catch((error) => {
+          console.error("Unused diary photo cleanup failed:", error);
+        });
+      }
       renderDiary();
       renderCalendar();
       showToast("That page was removed from your book.");
@@ -828,7 +1217,8 @@ function bindDiaryControls() {
     renderCalendar();
   });
   document.querySelector("#calendar-today").addEventListener("click", () => {
-    calendarDate = new Date();
+    const now = new Date();
+    calendarDate = new Date(now.getFullYear(), now.getMonth(), 1);
     selectedDate = localDateString(new Date());
     renderCalendar();
   });
@@ -837,13 +1227,31 @@ function bindDiaryControls() {
   document.querySelector("#cancel-reminder-button").addEventListener("click", () => document.querySelector("#reminder-dialog").close());
   document.querySelector("#enable-notifications").addEventListener("click", enableNotifications);
   document.querySelector("#profile-photo-input").addEventListener("change", handleProfilePhoto);
+  document.querySelector("#remove-profile-photo-button").addEventListener("click", removeProfilePhoto);
   document.querySelector("#note-photo-input").addEventListener("change", handleNotePhotos);
   document.querySelector("#save-profile-button").addEventListener("click", saveProfile);
-  document.querySelector("#note-dialog").addEventListener("close", () => { editingEntryId = null; });
+  document.querySelector("#export-backup-button").addEventListener("click", exportEncryptedBackup);
+  document.querySelector("#import-backup-button").addEventListener("click", () => document.querySelector("#backup-file-input").click());
+  document.querySelector("#gate-import-backup").addEventListener("click", () => document.querySelector("#backup-file-input").click());
+  document.querySelector("#backup-file-input").addEventListener("change", importEncryptedBackup);
+  document.querySelector("#note-dialog").addEventListener("close", () => {
+    editingEntryId = null;
+    pendingEntryPhotos.clear();
+    entryAttachments = [];
+    for (const url of photoPreviewUrls) URL.revokeObjectURL(url);
+    photoPreviewUrls = [];
+  });
+  document.querySelector("#profile-dialog").addEventListener("close", () => {
+    pendingPhoto = null;
+    if (vaultData) updateProfileUI();
+  });
   document.querySelector("#present-button").addEventListener("click", (event) => {
     const active = document.body.classList.toggle("presenting");
     event.currentTarget.querySelector("span").textContent = active ? "Close book" : "Read together";
     event.currentTarget.setAttribute("aria-pressed", String(active));
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") checkDueReminders();
   });
 }
 

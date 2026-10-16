@@ -443,6 +443,16 @@ button.calendar-event { cursor: pointer; }
 .empty-reminders p { margin: 0; color: #9a8290; font-size: 10px; }
 .profile-photo-preview { display: grid; width: 92px; height: 92px; margin: 3px auto 11px; place-items: center; overflow: hidden; border: 3px solid #fff; border-radius: 50%; color: #c36b8b; background: #f9e8ef; box-shadow: 0 0 0 1px #efd6e0, 0 7px 18px #c45f8317; font-size: 32px; }
 .profile-photo-preview.has-photo { padding: 0; }
+.topbar-avatar { padding: 0; border: 1px solid #f0dbe4; cursor: pointer; }
+.topbar-avatar:hover { box-shadow: 0 0 0 3px #faeaf0; }
+.remove-profile-photo-button { display: flex; margin: 0 auto 7px; }
+.backup-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 16px; padding-top: 13px; border-top: 1px solid #f1e4e9; }
+.backup-actions .quiet-button { min-height: 38px; white-space: normal; text-align: center; }
+.gate-restore { display: flex; width: 100%; margin-top: 9px; min-height: 37px; }
+.entry-photo-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 9px; margin-top: 15px; }
+.entry-photo-gallery img { width: 100%; max-height: 190px; aspect-ratio: 1; border: 1px solid #f1dbe4; border-radius: 10px; background: #fff; object-fit: cover; }
+.entry-photo-gallery span { color: #997f8b; font-size: 10px; }
+.book-entry-actions { flex-wrap: wrap; }
 
 .photo-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; margin-top: 8px; }
 .photo-preview-grid .photo-thumb { position: relative; width: 100%; padding-top: 100%; overflow: hidden; border-radius: 10px; background: #fff; border: 1px solid #f1dbe4; box-shadow: 0 6px 18px #c45f8312; }
@@ -490,7 +500,7 @@ body.presenting .book-page { padding-top: 58px; padding-bottom: 58px; }
   .sidebar .nav-link { display: flex; min-width: fit-content; height: 34px; gap: 6px; padding: 0 9px; font-size: 9px; }
   .sidebar .nav-link svg { width: 13px; height: 13px; }
   .sidebar .nav-count { min-width: 15px; height: 15px; font-size: 8px; }
-  .sidebar .lock-button { display: none; }
+  .sidebar .lock-button { display: block; grid-column: 2; grid-row: 1; margin: 0; padding: 7px 8px; font-size: 9px; }
   .desk-content, .content-view { padding: 24px 16px 70px; }
   .view-heading { align-items: start; margin-bottom: 18px; }
   .view-heading h1 { font-size: 28px; }

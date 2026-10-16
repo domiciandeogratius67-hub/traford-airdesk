@@ -148,7 +148,7 @@ class AirDeskHandler(BaseHTTPRequestHandler):
             self.send_header(
                 "Content-Security-Policy",
                 "default-src 'self'; connect-src 'self' http://127.0.0.1:8765 "
-                "http://localhost:8765; img-src 'self' data:; style-src 'self'; "
+                "http://localhost:8765; img-src 'self' data: blob:; style-src 'self'; "
                 "script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
             )
 
