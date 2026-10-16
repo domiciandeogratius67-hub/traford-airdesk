@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f5f1">
+    <meta name="description" content="A calm, local-first AI workspace for collecting ideas, making plans, and getting things done.">
+    <title>Traford AirDesk — your ideas, in good company</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='13' fill='%232f6d59'/%3E%3Cpath d='M10 13h20M20 13v16m-7-9h14' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="./styles.css">
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Workspace navigation">
+        <a class="brand" href="./" aria-label="Traford AirDesk home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32"><path d="M7 10h18M16 10v15m-7-8h14"/></svg>
+          </span>
+          <span class="brand-copy"><strong>AirDesk</strong><small>by Traford</small></span>
+        </a>
+
+        <div class="workspace-switcher">
+          <span class="workspace-icon">A</span>
+          <span class="workspace-name"><strong>My workspace</strong><small>Personal desk</small></span>
+          <span class="switcher-chevron" aria-hidden="true">⌄</span>
+        </div>
+
+        <div class="sidebar-label">WORKSPACE</div>
+        <nav class="main-nav">
+          <button class="nav-link is-active" type="button" data-view="desk">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
+            <span>My desk</span><span class="nav-count" id="nav-card-count">3</span>
+          </button>
+          <button class="nav-link" type="button" id="new-note-button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>New idea</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-label sidebar-label-spaced">YOUR SHORTCUTS</div>
+        <button class="shortcut-link" type="button" data-prompt="Help me turn a big goal into a simple plan I can start today.">
+          <span class="shortcut-dot dot-sage"></span> Make a plan
+        </button>
+        <button class="shortcut-link" type="button" data-prompt="Help me brainstorm fresh ideas. Ask me one useful question to get started.">
+          <span class="shortcut-dot dot-lilac"></span> Brainstorm together
+        </button>
+        <button class="shortcut-link" type="button" data-prompt="Help me write a clear, friendly first draft. Ask what I am writing and who it is for.">
+          <span class="shortcut-dot dot-peach"></span> Write something
+        </button>
+
+        <div class="sidebar-spacer"></div>
+        <div class="privacy-card">
+          <span class="privacy-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></svg>
+          </span>
+          <strong>Your space, your data</strong>
+          <p>Your desk stays in this browser. AI chats go to your own Ollama when connected.</p>
+        </div>
+        <button class="profile-button" type="button" id="settings-button" aria-label="Open settings">
+          <span class="profile-avatar">T</span>
+          <span class="profile-copy"><strong>Traford</strong><small>Local workspace</small></span>
+          <span class="profile-more" aria-hidden="true">···</span>
+        </button>
+      </aside>
+
+      <main class="main-content" id="main-content">
+        <header class="topbar">
+          <div class="breadcrumb"><span>My workspace</span><span class="breadcrumb-divider">/</span><strong>My desk</strong></div>
+          <div class="topbar-actions">
+            <span class="connection-pill" id="connection-pill" data-state="checking">
+              <span class="connection-dot"></span><span id="connection-label">Checking Ollama</span>
+            </span>
+            <button class="icon-button" id="top-settings-button" type="button" aria-label="Settings" title="Settings">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1a1.7 1.7 0 1 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.3a1.7 1.7 0 1 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9h-.3a1.7 1.7 0 1 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2v-.3a1.7 1.7 0 1 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.3a1.7 1.7 0 1 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg>
+            </button>
+            <span class="topbar-avatar" aria-label="Traford">T</span>
+          </div>
+        </header>
+
+        <section class="desk-content" aria-labelledby="desk-title">
+          <div class="greeting-row">
+            <div>
+              <div class="eyebrow"><span class="eyebrow-sparkle" aria-hidden="true">✳</span> YOUR SPACE TO THINK</div>
+              <h1 id="desk-title">A little room to <span>think big.</span></h1>
+              <p class="desk-subtitle">Keep the good ideas close. Take the next step when you’re ready.</p>
+            </div>
+            <div class="greeting-date" id="greeting-date"></div>
+          </div>
+
+          <div class="desk-toolbar">
+            <div class="section-heading">
+              <div><h2>Your ideas</h2><span class="idea-count" id="idea-count">3 ideas</span></div>
+              <p>A flexible canvas for the things on your mind.</p>
+            </div>
+            <div class="toolbar-actions">
+              <button class="quiet-button" id="present-button" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4m-4-9 3-3 2 2 3-4"/></svg>
+                <span>Present</span>
+              </button>
+              <button class="primary-button" id="add-idea-button" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                <span>Add an idea</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="idea-grid" id="idea-grid" aria-live="polite"></div>
+          <div class="desk-footer">
+            <span><span class="footer-sparkle">✳</span> Made for curious minds</span>
+            <span class="creator-credit">Created by <strong>Traford</strong> ·
+              <a href="https://github.com/domiciandeogratius67-hub/traford-airdesk" target="_blank" rel="noreferrer">Source</a> ·
+              <a href="./LICENSE">AGPL-3.0-or-later</a> · No warranty
+            </span>
+          </div>
+        </section>
+      </main>
+
+      <aside class="chat-panel" aria-label="AirDesk AI chat">
+        <header class="chat-header">
+          <div class="chat-identity">
+            <span class="assistant-avatar" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3.5v3m0 11v3m8.5-8.5h-3m-11 0h-3M18 6l-2.1 2.1m-7.8 7.8L6 18m12 0-2.1-2.1M8.1 8.1 6 6"/><circle cx="12" cy="12" r="4"/></svg>
+            </span>
+            <div><strong>AirDesk AI</strong><span><span class="mini-status-dot" id="chat-status-dot"></span><span id="chat-status-label">Your thinking partner</span></span></div>
+          </div>
+          <button class="icon-button chat-menu-button" id="new-chat-button" type="button" aria-label="Start a new chat" title="New chat">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </header>
+
+        <div class="chat-welcome" id="chat-welcome">
+          <span class="welcome-orbit" aria-hidden="true"><span>✳</span></span>
+          <h2>Good ideas start<br>with a conversation.</h2>
+          <p>I’m here to help you think things through, make a plan, or just explore what’s possible.</p>
+          <div class="suggestion-list">
+            <button type="button" class="suggestion" data-prompt="I have an idea I want to explore. Can you help me shape it?"><span>✦</span> Help me shape an idea <span class="suggestion-arrow">↗</span></button>
+            <button type="button" class="suggestion" data-prompt="Can you help me figure out the best next step for what I am working on?"><span>↗</span> Find my next step <span class="suggestion-arrow">↗</span></button>
+            <button type="button" class="suggestion" data-prompt="I am not sure where to start. Ask me a few questions to help me get unstuck."><span>☼</span> Help me get unstuck <span class="suggestion-arrow">↗</span></button>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages" aria-live="polite" aria-label="Conversation"></div>
+        <div class="chat-thinking" id="chat-thinking" hidden><span></span><span></span><span></span><em>Thinking it through…</em></div>
+
+        <div class="chat-composer-wrap">
+          <div class="chat-composer">
+            <textarea id="chat-input" rows="1" maxlength="12000" aria-label="Message AirDesk AI" placeholder="Ask anything, or just start typing…"></textarea>
+            <div class="composer-bottom">
+              <button class="model-picker" id="model-picker" type="button" aria-label="Choose AI model" title="Model name is editable in settings">
+                <span class="model-icon">◌</span><span id="model-label">qwen3</span><span class="model-caret">⌄</span>
+              </button>
+              <button class="send-button" id="send-button" type="button" aria-label="Send message">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-7-5.5 14-2.5-6.5L5 12Z"/><path d="m11 12 8-7"/></svg>
+              </button>
+            </div>
+          </div>
+          <p class="composer-note">AirDesk can make mistakes. Your chats are saved only in this browser.</p>
+        </div>
+      </aside>
+    </div>
+
+    <dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
+      <form method="dialog" class="dialog-close-form"><button class="icon-button" aria-label="Close settings">×</button></form>
+      <div class="dialog-heading"><span class="dialog-icon">⌘</span><div><h2 id="settings-title">Your AirDesk setup</h2><p>Connect your own local AI, on your terms.</p></div></div>
+      <div class="settings-status" id="settings-status" data-state="checking"><span class="connection-dot"></span><span>Checking your local companion…</span></div>
+      <label class="field-label" for="endpoint-input">Local companion address</label>
+      <input id="endpoint-input" class="text-field" type="url" value="http://127.0.0.1:8765" autocomplete="url" spellcheck="false">
+      <p class="field-hint">Keep this at the default unless you changed the companion port. AirDesk connects only to a local address.</p>
+      <label class="field-label" for="model-input">Ollama model</label>
+      <input id="model-input" class="text-field" type="text" value="qwen3" maxlength="120" spellcheck="false">
+      <p class="field-hint">The default is <code>qwen3</code>. Install it with <code>ollama run qwen3</code>.</p>
+      <label class="contrast-option" for="high-contrast-toggle">
+        <span><strong>Higher contrast</strong><small>Make key text and controls easier to distinguish.</small></span>
+        <input id="high-contrast-toggle" type="checkbox">
+      </label>
+      <div class="setup-callout">
+        <strong>Not connected yet?</strong>
+        <span>Install Ollama, then run <code>python companion/server.py</code> from this project folder. GitHub Pages hosts the desk, not your private AI service.</span>
+        <a href="https://ollama.com/download" target="_blank" rel="noreferrer">Get Ollama <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="dialog-actions">
+        <button class="quiet-button" id="check-connection-button" type="button">Check connection</button>
+        <button class="primary-button" id="save-settings-button" type="button">Save settings</button>
+      </div>
+      <p class="dialog-credit">Created by Traford · Your data stays yours.</p>
+    </dialog>
+
+    <dialog class="note-dialog" id="note-dialog" aria-labelledby="note-title">
+      <form method="dialog" class="dialog-close-form"><button class="icon-button" aria-label="Close">×</button></form>
+      <div class="dialog-heading"><span class="dialog-icon note-icon">✦</span><div><h2 id="note-title">Capture a good idea</h2><p>Small sparks can turn into big things.</p></div></div>
+      <label class="field-label" for="note-heading-input">Give it a name</label>
+      <input id="note-heading-input" class="text-field" maxlength="90" placeholder="A little idea…">
+      <label class="field-label note-body-label" for="note-body-input">What’s on your mind?</label>
+      <textarea id="note-body-input" class="text-field note-textarea" maxlength="1200" rows="5" placeholder="Write a few words, or get it all down…"></textarea>
+      <div class="dialog-actions">
+        <button class="quiet-button" id="cancel-note-button" type="button">Cancel</button>
+        <button class="primary-button" id="save-note-button" type="button">Add to my desk</button>
+      </div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <footer class="mobile-credit">Created by Traford</footer>
+  </body>
+</html>
